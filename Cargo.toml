@@ -7,3 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0"
+deadqueue = "0.1"
+tokio = {version="0.3", features=["io-std", "io-util", "sync", "rt"]}
+stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.6", features=["postgres_types"] }
+
+[dev-dependencies]
+tokio = {version="0.3", features=["rt-multi-thread", "macros"]}
