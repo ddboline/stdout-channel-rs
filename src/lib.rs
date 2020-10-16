@@ -1,13 +1,12 @@
 use anyhow::Error;
 use deadqueue::unlimited::Queue;
 use stack_string::StackString;
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 use tokio::{
     io::{stderr, stdout, AsyncWriteExt},
     sync::Mutex,
     task::{spawn, JoinHandle},
 };
-use std::ops::Deref;
 
 enum MessageType {
     Mesg(StackString),
@@ -132,10 +131,22 @@ impl MockStdout {
 mod tests {
     use anyhow::Error;
 
-    use super::{StdoutChannel, MockStdout};
+    use super::{MockStdout, StdoutChannel};
 
     #[tokio::test]
     async fn test_stdout_task() -> Result<(), Error> {
+        let chan = StdoutChannel::new();
+
+        chan.send("stdout: Hey There");
+        chan.send("What's happening".to_string());
+        chan.send_err("stderr: How it goes");
+
+        chan.close().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_mock_stdout() -> Result<(), Error> {
         let stdout = MockStdout::new();
         let stderr = MockStdout::new();
 
