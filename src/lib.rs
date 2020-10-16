@@ -124,6 +124,12 @@ impl StdoutChannel {
 #[derive(Clone)]
 pub struct MockStdout(Arc<Mutex<Vec<StackString>>>);
 
+impl Default for MockStdout {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Deref for MockStdout {
     type Target = Mutex<Vec<StackString>>;
     fn deref(&self) -> &Self::Target {
