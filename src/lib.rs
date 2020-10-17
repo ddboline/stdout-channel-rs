@@ -150,6 +150,18 @@ mod tests {
     use super::{MockStdout, StdoutChannel};
 
     #[tokio::test]
+    async fn test_default() -> Result<(), Error> {
+        let chan = StdoutChannel::default();
+
+        chan.send("stdout: Hey There");
+        chan.send("What's happening".to_string());
+        chan.send_err("stderr: How it goes");
+
+        chan.close().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_stdout_task() -> Result<(), Error> {
         let chan = StdoutChannel::new();
 
