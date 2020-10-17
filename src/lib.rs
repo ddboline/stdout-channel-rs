@@ -150,6 +150,15 @@ mod tests {
     use super::{MockStdout, StdoutChannel};
 
     #[tokio::test]
+    async fn test_default_mockstdout() -> Result<(), Error> {
+        let mock = MockStdout::default();
+        mock.lock().await.push("HEY".into());
+        assert_eq!(mock.lock().await.len(), 1);
+        assert_eq!(mock.lock().await[0].as_str(), "HEY");
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_default() -> Result<(), Error> {
         let chan = StdoutChannel::default();
 
