@@ -1,6 +1,6 @@
 [package]
 name = "stdout-channel"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0"
 deadqueue = "0.1"
 tokio = {version="0.3", features=["io-std", "io-util", "sync", "rt-multi-thread"]}
-stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.7", features=["postgres_types"] }
+stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.9", features=["postgres_types"] }
 
 [dev-dependencies]
 tokio = {version="0.3", features=["rt-multi-thread", "macros"]}
