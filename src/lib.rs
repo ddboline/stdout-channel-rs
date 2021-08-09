@@ -18,20 +18,20 @@ use tokio::{
     task::{spawn, JoinHandle},
 };
 
-enum MessageType<T> {
+enum StdoutMessage<T> {
     Mesg(T),
     Close,
 }
 
-type ChanType<T> = Queue<MessageType<T>>;
-type TaskType = JoinHandle<Result<(), Error>>;
+type StdoutQueue<T> = Queue<StdoutMessage<T>>;
+type StdoutTask = JoinHandle<Result<(), Error>>;
 
 #[derive(Clone)]
 pub struct StdoutChannel<T> {
-    stdout_queue: Arc<ChanType<T>>,
-    stderr_queue: Arc<ChanType<T>>,
-    stdout_task: Arc<Mutex<Option<TaskType>>>,
-    stderr_task: Arc<Mutex<Option<TaskType>>>,
+    stdout_queue: Arc<StdoutQueue<T>>,
+    stderr_queue: Arc<StdoutQueue<T>>,
+    stdout_task: Arc<Mutex<Option<StdoutTask>>>,
+    stderr_task: Arc<Mutex<Option<StdoutTask>>>,
 }
 
 impl<T> Default for StdoutChannel<T>
@@ -90,16 +90,16 @@ where T: Display + Send + 'static
     }
 
     pub fn send(&self, item: impl Into<T>) {
-        self.stdout_queue.push(MessageType::Mesg(item.into()));
+        self.stdout_queue.push(StdoutMessage::Mesg(item.into()));
     }
 
     pub fn send_err(&self, item: impl Into<T>) {
-        self.stderr_queue.push(MessageType::Mesg(item.into()));
+        self.stderr_queue.push(StdoutMessage::Mesg(item.into()));
     }
 
     pub async fn close(&self) -> Result<(), Error> {
-        self.stdout_queue.push(MessageType::Close);
-        self.stderr_queue.push(MessageType::Close);
+        self.stdout_queue.push(StdoutMessage::Close);
+        self.stderr_queue.push(StdoutMessage::Close);
         if let Some(stdout_task) = self.stdout_task.lock().await.take() {
             stdout_task.await??;
         }
@@ -109,22 +109,22 @@ where T: Display + Send + 'static
         Ok(())
     }
 
-    async fn stdout_task(queue: &ChanType<T>) -> Result<(), Error> {
-        while let MessageType::Mesg(line) = queue.pop().await {
+    async fn stdout_task(queue: &StdoutQueue<T>) -> Result<(), Error> {
+        while let StdoutMessage::Mesg(line) = queue.pop().await {
             stdout().write_all(format!("{}\n", line).as_bytes()).await?;
         }
         Ok(())
     }
 
-    async fn stderr_task(queue: &ChanType<T>) -> Result<(), Error> {
-        while let MessageType::Mesg(line) = queue.pop().await {
+    async fn stderr_task(queue: &StdoutQueue<T>) -> Result<(), Error> {
+        while let StdoutMessage::Mesg(line) = queue.pop().await {
             stderr().write_all(format!("{}\n", line).as_bytes()).await?;
         }
         Ok(())
     }
 
-    async fn mock_stdout(queue: &ChanType<T>, mock_stdout: &MockStdout<T>) -> Result<(), Error> {
-        while let MessageType::Mesg(line) = queue.pop().await {
+    async fn mock_stdout(queue: &StdoutQueue<T>, mock_stdout: &MockStdout<T>) -> Result<(), Error> {
+        while let StdoutMessage::Mesg(line) = queue.pop().await {
             mock_stdout.lock().await.push(line);
         }
         Ok(())
