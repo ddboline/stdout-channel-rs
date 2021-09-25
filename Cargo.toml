@@ -1,6 +1,6 @@
 [package]
 name = "stdout-channel"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 description = "Write stdout to an async queue."
@@ -18,4 +18,4 @@ tokio = {version="1.2", features=["io-std", "io-util", "sync", "rt-multi-thread"
 
 [dev-dependencies]
 tokio = {version="1.2", features=["rt-multi-thread", "macros"]}
-stack-string = { version="0.2", features=["postgres_types"] }
+stack-string = { version="0.3", features=["postgres_types"] }
