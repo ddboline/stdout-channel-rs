@@ -10,8 +10,7 @@
 
 use anyhow::Error;
 use deadqueue::unlimited::Queue;
-use std::{fmt, ops::Deref, sync::Arc};
-use std::fmt::Display;
+use std::{fmt, fmt::Display, ops::Deref, sync::Arc};
 use tokio::{
     io::{stderr, stdout, AsyncWriteExt},
     sync::Mutex,
@@ -35,7 +34,8 @@ pub struct StdoutChannel<T> {
 }
 
 impl<T> Default for StdoutChannel<T>
-where T: Display + Send + 'static
+where
+    T: Display + Send + 'static,
 {
     fn default() -> Self {
         Self::new()
@@ -49,19 +49,22 @@ impl<T> fmt::Debug for StdoutChannel<T> {
 }
 
 impl<T> StdoutChannel<T>
-where T: Display + Send + 'static
+where
+    T: Display + Send + 'static,
 {
     pub fn new() -> Self {
-        let stdout_queue = Arc::new(Queue::new());
-        let stderr_queue = Arc::new(Queue::new());
-        let stdout_task = Arc::new(Mutex::new(Some(spawn({
-            let queue = stdout_queue.clone();
-            async move { Self::stdout_task(&queue).await }
-        }))));
-        let stderr_task = Arc::new(Mutex::new(Some(spawn({
-            let queue = stderr_queue.clone();
-            async move { Self::stderr_task(&queue).await }
-        }))));
+        let stdout_queue = Queue::new().into();
+        let stderr_queue = Queue::new().into();
+        let stdout_task = Mutex::new(Some(spawn({
+            let queue = Arc::clone(&stdout_queue);
+            async move { Self::process_stdout(&queue).await }
+        })))
+        .into();
+        let stderr_task = Mutex::new(Some(spawn({
+            let queue = Arc::clone(&stderr_queue);
+            async move { Self::process_stderr(&queue).await }
+        })))
+        .into();
         Self {
             stdout_queue,
             stderr_queue,
@@ -71,16 +74,18 @@ where T: Display + Send + 'static
     }
 
     pub fn with_mock_stdout(mock_stdout: MockStdout<T>, mock_stderr: MockStdout<T>) -> Self {
-        let stdout_queue = Arc::new(Queue::new());
-        let stderr_queue = Arc::new(Queue::new());
-        let stdout_task = Arc::new(Mutex::new(Some(spawn({
-            let queue = stdout_queue.clone();
-            async move { Self::mock_stdout(&queue, &mock_stdout).await }
-        }))));
-        let stderr_task = Arc::new(Mutex::new(Some(spawn({
-            let queue = stderr_queue.clone();
-            async move { Self::mock_stdout(&queue, &mock_stderr).await }
-        }))));
+        let stdout_queue = Queue::new().into();
+        let stderr_queue = Queue::new().into();
+        let stdout_task = Mutex::new(Some(spawn({
+            let queue = Arc::clone(&stdout_queue);
+            async move { Self::process_mock(&queue, &mock_stdout).await }
+        })))
+        .into();
+        let stderr_task = Mutex::new(Some(spawn({
+            let queue = Arc::clone(&stderr_queue);
+            async move { Self::process_mock(&queue, &mock_stderr).await }
+        })))
+        .into();
         Self {
             stdout_queue,
             stderr_queue,
@@ -109,21 +114,32 @@ where T: Display + Send + 'static
         Ok(())
     }
 
-    async fn stdout_task(queue: &StdoutQueue<T>) -> Result<(), Error> {
+    async fn process_stdout(queue: &StdoutQueue<T>) -> Result<(), Error> {
+        use std::io::Write;
+        let mut buf = Vec::new();
         while let StdoutMessage::Mesg(line) = queue.pop().await {
-            stdout().write_all(format!("{}\n", line).as_bytes()).await?;
+            write!(buf, "{}\n", line)?;
+            stdout().write_all(&buf).await?;
+            buf.clear();
         }
         Ok(())
     }
 
-    async fn stderr_task(queue: &StdoutQueue<T>) -> Result<(), Error> {
+    async fn process_stderr(queue: &StdoutQueue<T>) -> Result<(), Error> {
+        use std::io::Write;
+        let mut buf = Vec::new();
         while let StdoutMessage::Mesg(line) = queue.pop().await {
-            stderr().write_all(format!("{}\n", line).as_bytes()).await?;
+            write!(buf, "{}\n", line)?;
+            stderr().write_all(&buf).await?;
+            buf.clear();
         }
         Ok(())
     }
 
-    async fn mock_stdout(queue: &StdoutQueue<T>, mock_stdout: &MockStdout<T>) -> Result<(), Error> {
+    async fn process_mock(
+        queue: &StdoutQueue<T>,
+        mock_stdout: &MockStdout<T>,
+    ) -> Result<(), Error> {
         while let StdoutMessage::Mesg(line) = queue.pop().await {
             mock_stdout.lock().await.push(line);
         }
@@ -149,7 +165,7 @@ impl<T> Deref for MockStdout<T> {
 
 impl<T> MockStdout<T> {
     pub fn new() -> Self {
-        Self(Arc::new(Mutex::new(Vec::new())))
+        Self(Mutex::new(Vec::new()).into())
     }
 }
 
