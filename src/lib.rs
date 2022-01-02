@@ -8,9 +8,11 @@
 #![allow(clippy::cognitive_complexity)]
 #![allow(clippy::unseparated_literal_suffix)]
 
+pub mod rate_limiter;
+
 use anyhow::Error;
 use deadqueue::unlimited::Queue;
-use std::{fmt, fmt::Display, ops::Deref, sync::Arc};
+use std::{fmt, fmt::Display, io::Write, ops::Deref, sync::Arc};
 use tokio::{
     io::{stderr, stdout, AsyncWriteExt},
     sync::Mutex,
@@ -44,7 +46,7 @@ where
 
 impl<T> fmt::Debug for StdoutChannel<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "StdoutChannel")
+        write!(f, "StdoutChannel")
     }
 }
 
@@ -115,23 +117,17 @@ where
     }
 
     async fn process_stdout(queue: &StdoutQueue<T>) -> Result<(), Error> {
-        use std::io::Write;
-        let mut buf = Vec::new();
+        let mut buf = Buffer::new();
         while let StdoutMessage::Mesg(line) = queue.pop().await {
-            write!(buf, "{}\n", line)?;
-            stdout().write_all(&buf).await?;
-            buf.clear();
+            stdout().write_all(buf.write_line(line)?).await?;
         }
         Ok(())
     }
 
     async fn process_stderr(queue: &StdoutQueue<T>) -> Result<(), Error> {
-        use std::io::Write;
-        let mut buf = Vec::new();
+        let mut buf = Buffer::new();
         while let StdoutMessage::Mesg(line) = queue.pop().await {
-            write!(buf, "{}\n", line)?;
-            stderr().write_all(&buf).await?;
-            buf.clear();
+            stderr().write_all(buf.write_line(line)?).await?;
         }
         Ok(())
     }
@@ -144,6 +140,21 @@ where
             mock_stdout.lock().await.push(line);
         }
         Ok(())
+    }
+}
+
+struct Buffer(Vec<u8>);
+
+impl Buffer {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    pub fn write_line<T: Display>(&mut self, line: T) -> Result<&[u8], Error> {
+        self.0.clear();
+        self.0.shrink_to(4096);
+        writeln!(self.0, "{}", line)?;
+        Ok(&self.0)
     }
 }
 
