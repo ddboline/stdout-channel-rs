@@ -10,6 +10,8 @@
 
 pub mod rate_limiter;
 
+pub use rate_limiter::RateLimiter;
+
 use anyhow::Error;
 use deadqueue::unlimited::Queue;
 use std::{fmt, fmt::Display, io::Write, ops::Deref, sync::Arc};
@@ -143,6 +145,8 @@ where
     }
 }
 
+const MAX_BUFFER_CAPACITY: usize = 4096;
+
 struct Buffer(Vec<u8>);
 
 impl Buffer {
@@ -152,7 +156,9 @@ impl Buffer {
 
     pub fn write_line<T: Display>(&mut self, line: T) -> Result<&[u8], Error> {
         self.0.clear();
-        self.0.shrink_to(4096);
+        if self.0.capacity() > MAX_BUFFER_CAPACITY {
+            self.0.shrink_to(MAX_BUFFER_CAPACITY);
+        }
         writeln!(self.0, "{}", line)?;
         Ok(&self.0)
     }

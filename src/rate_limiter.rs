@@ -32,14 +32,6 @@ impl RateLimiter {
     }
 }
 
-fn gtzero(x: usize) -> Option<usize> {
-    if x > 0 {
-        Some(x - 1)
-    } else {
-        None
-    }
-}
-
 struct RateLimiterInner {
     max_per_unit_time: usize,
     unit_time_ms: usize,
@@ -57,14 +49,22 @@ impl RateLimiterInner {
         }
     }
 
-    fn decrement_remaining(&self) -> Result<usize, usize> {
+    fn decrement_remaining(&self) -> bool {
+        fn gtzero(x: usize) -> Option<usize> {
+            if x > 0 {
+                Some(x - 1)
+            } else {
+                None
+            }
+        }
+
         self.remaining
-            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, gtzero)
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, gtzero).is_ok()
     }
 
     async fn acquire(&self) {
         loop {
-            if self.decrement_remaining().is_ok() {
+            if self.decrement_remaining() {
                 return;
             }
             self.notify.notified().await;
