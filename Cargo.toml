@@ -18,7 +18,7 @@ tokio = {version="1.15", features=["io-std", "io-util", "sync", "rt-multi-thread
 
 [dev-dependencies]
 tokio = {version="1.15", features=["rt-multi-thread", "macros"]}
-stack-string = { version="0.6", features=["postgres_types"] }
+stack-string = { version="0.7", features=["postgres_types"] }
 chrono = "0.4"
 env_logger = "0.9"
 log = "0.4"
