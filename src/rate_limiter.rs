@@ -60,7 +60,8 @@ impl RateLimiterInner {
         }
 
         self.remaining
-            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, gtzero).is_ok()
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, gtzero)
+            .is_ok()
     }
 
     async fn acquire(&self) {

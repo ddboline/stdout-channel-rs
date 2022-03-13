@@ -1,9 +1,3 @@
-#![allow(clippy::too_many_lines)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::cognitive_complexity)]
-#![allow(clippy::unseparated_literal_suffix)]
-
 pub mod rate_limiter;
 
 pub use rate_limiter::RateLimiter;
@@ -104,6 +98,11 @@ where
         self.stderr_queue.push(StdoutMessage::Mesg(item.into()));
     }
 
+    /// Close the `StdoutChannel`
+    /// # Errors
+    ///
+    /// Will error if there have been any errors or panics in the stdout and
+    /// stderr tasks
     pub async fn close(&self) -> Result<(), Error> {
         self.stdout_queue.push(StdoutMessage::Close);
         self.stderr_queue.push(StdoutMessage::Close);
