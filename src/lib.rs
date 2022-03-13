@@ -1,9 +1,5 @@
-#![allow(clippy::must_use_candidate)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::module_name_repetitions)]
-#![allow(clippy::cast_precision_loss)]
-#![allow(clippy::cast_sign_loss)]
-#![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::cognitive_complexity)]
 #![allow(clippy::unseparated_literal_suffix)]
@@ -56,6 +52,7 @@ impl<T> StdoutChannel<T>
 where
     T: Display + Send + 'static,
 {
+    #[must_use]
     pub fn new() -> Self {
         let stdout_queue = Queue::new().into();
         let stderr_queue = Queue::new().into();
@@ -77,6 +74,7 @@ where
         }
     }
 
+    #[must_use]
     pub fn with_mock_stdout(mock_stdout: MockStdout<T>, mock_stderr: MockStdout<T>) -> Self {
         let stdout_queue = Queue::new().into();
         let stderr_queue = Queue::new().into();
@@ -181,6 +179,7 @@ impl<T> Deref for MockStdout<T> {
 }
 
 impl<T> MockStdout<T> {
+    #[must_use]
     pub fn new() -> Self {
         Self(Mutex::new(Vec::new()).into())
     }

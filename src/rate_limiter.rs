@@ -16,6 +16,7 @@ pub struct RateLimiter {
 }
 
 impl RateLimiter {
+    #[must_use]
     pub fn new(max_per_unit_time: usize, unit_time_ms: usize) -> Self {
         let inner = Arc::new(RateLimiterInner::new(max_per_unit_time, unit_time_ms));
         let rate_task = Arc::new({
