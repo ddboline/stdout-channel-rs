@@ -86,12 +86,12 @@ impl RateLimiterInner {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
-    use chrono::Utc;
     use log::debug;
     use std::sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     };
+    use time::OffsetDateTime;
     use tokio::{
         task::spawn,
         time::{sleep, Duration},
@@ -103,7 +103,7 @@ mod tests {
     async fn test_rate_limiter() -> Result<(), Error> {
         env_logger::init();
 
-        let start = Utc::now();
+        let start = OffsetDateTime::now_utc();
 
         let rate_limiter = RateLimiter::new(1000, 100);
         let test_count = Arc::new(AtomicUsize::new(0));
@@ -130,14 +130,14 @@ mod tests {
             t.await?;
         }
 
-        let elapsed = Utc::now() - start;
+        let elapsed = OffsetDateTime::now_utc() - start;
 
         println!(
             "{} {}",
-            elapsed.num_milliseconds(),
+            elapsed.whole_milliseconds(),
             test_count.load(Ordering::SeqCst)
         );
-        assert!(elapsed.num_milliseconds() >= 950);
+        assert!(elapsed.whole_milliseconds() >= 950);
         assert_eq!(test_count.load(Ordering::SeqCst), 10_000);
         Ok(())
     }
