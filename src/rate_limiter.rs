@@ -85,7 +85,6 @@ impl RateLimiterInner {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Error;
     use log::debug;
     use std::sync::{
         atomic::{AtomicUsize, Ordering},
@@ -98,9 +97,10 @@ mod tests {
     };
 
     use crate::rate_limiter::RateLimiter;
+    use crate::StdoutChannelError;
 
     #[tokio::test]
-    async fn test_rate_limiter() -> Result<(), Error> {
+    async fn test_rate_limiter() -> Result<(), StdoutChannelError> {
         env_logger::init();
 
         let start = OffsetDateTime::now_utc();

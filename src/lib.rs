@@ -2,7 +2,6 @@ pub mod rate_limiter;
 
 pub use rate_limiter::RateLimiter;
 
-use anyhow::Error;
 use deadqueue::unlimited::Queue;
 use std::{fmt, fmt::Display, io::Write, ops::Deref, sync::Arc};
 use tokio::{
@@ -10,6 +9,17 @@ use tokio::{
     sync::Mutex,
     task::{spawn, JoinHandle},
 };
+use thiserror::Error;
+use tokio::task::JoinError;
+use std::io::Error as IoError;
+
+#[derive(Error, Debug)]
+pub enum StdoutChannelError {
+    #[error("task join error")]
+    JoinError(#[from] JoinError),
+    #[error("io error")]
+    IoError(#[from] IoError),
+}
 
 enum StdoutMessage<T> {
     Mesg(T),
@@ -17,7 +27,7 @@ enum StdoutMessage<T> {
 }
 
 type StdoutQueue<T> = Queue<StdoutMessage<T>>;
-type StdoutTask = JoinHandle<Result<(), Error>>;
+type StdoutTask = JoinHandle<Result<(), StdoutChannelError>>;
 
 #[derive(Clone)]
 pub struct StdoutChannel<T> {
@@ -103,7 +113,7 @@ where
     ///
     /// Will error if there have been any errors or panics in the stdout and
     /// stderr tasks
-    pub async fn close(&self) -> Result<(), Error> {
+    pub async fn close(&self) -> Result<(), StdoutChannelError> {
         self.stdout_queue.push(StdoutMessage::Close);
         self.stderr_queue.push(StdoutMessage::Close);
         if let Some(stdout_task) = self.stdout_task.lock().await.take() {
@@ -115,7 +125,7 @@ where
         Ok(())
     }
 
-    async fn process_stdout(queue: &StdoutQueue<T>) -> Result<(), Error> {
+    async fn process_stdout(queue: &StdoutQueue<T>) -> Result<(), StdoutChannelError> {
         let mut buf = Buffer::new();
         while let StdoutMessage::Mesg(line) = queue.pop().await {
             stdout().write_all(buf.write_line(line)?).await?;
@@ -123,7 +133,7 @@ where
         Ok(())
     }
 
-    async fn process_stderr(queue: &StdoutQueue<T>) -> Result<(), Error> {
+    async fn process_stderr(queue: &StdoutQueue<T>) -> Result<(), StdoutChannelError> {
         let mut buf = Buffer::new();
         while let StdoutMessage::Mesg(line) = queue.pop().await {
             stderr().write_all(buf.write_line(line)?).await?;
@@ -134,7 +144,7 @@ where
     async fn process_mock(
         queue: &StdoutQueue<T>,
         mock_stdout: &MockStdout<T>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), StdoutChannelError> {
         while let StdoutMessage::Mesg(line) = queue.pop().await {
             mock_stdout.lock().await.push(line);
         }
@@ -151,7 +161,7 @@ impl Buffer {
         Self(Vec::new())
     }
 
-    pub fn write_line<T: Display>(&mut self, line: T) -> Result<&[u8], Error> {
+    pub fn write_line<T: Display>(&mut self, line: T) -> Result<&[u8], StdoutChannelError> {
         self.0.clear();
         if self.0.capacity() > MAX_BUFFER_CAPACITY {
             self.0.shrink_to(MAX_BUFFER_CAPACITY);
@@ -186,13 +196,12 @@ impl<T> MockStdout<T> {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Error;
     use stack_string::StackString;
 
-    use super::{MockStdout, StdoutChannel};
+    use super::{MockStdout, StdoutChannel, StdoutChannelError};
 
     #[tokio::test]
-    async fn test_default_mockstdout() -> Result<(), Error> {
+    async fn test_default_mockstdout() -> Result<(), StdoutChannelError> {
         let mock = MockStdout::default();
         mock.lock().await.push(StackString::from("HEY"));
         assert_eq!(mock.lock().await.len(), 1);
@@ -201,7 +210,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_default() -> Result<(), Error> {
+    async fn test_default() -> Result<(), StdoutChannelError> {
         let chan = StdoutChannel::<StackString>::default();
 
         chan.send("stdout: Hey There");
@@ -213,7 +222,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_stdout_task() -> Result<(), Error> {
+    async fn test_stdout_task() -> Result<(), StdoutChannelError> {
         let chan = StdoutChannel::<StackString>::default();
 
         chan.send("stdout: Hey There");
@@ -225,7 +234,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_mock_stdout() -> Result<(), Error> {
+    async fn test_mock_stdout() -> Result<(), StdoutChannelError> {
         let stdout = MockStdout::<StackString>::new();
         let stderr = MockStdout::new();
 

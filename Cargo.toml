@@ -1,6 +1,6 @@
 [package]
 name = "stdout-channel"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 description = "Write stdout to an async queue."
@@ -12,7 +12,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0"
+thiserror = "1.0"
 deadqueue = "0.2"
 tokio = {version="1.15", features=["io-std", "io-util", "sync", "rt-multi-thread", "time"]}
 
