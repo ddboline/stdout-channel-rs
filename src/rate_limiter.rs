@@ -137,7 +137,7 @@ mod tests {
             elapsed.whole_milliseconds(),
             test_count.load(Ordering::SeqCst)
         );
-        assert!(elapsed.whole_milliseconds() >= 950);
+        assert!(elapsed.whole_milliseconds() >= 900);
         assert_eq!(test_count.load(Ordering::SeqCst), 10_000);
         Ok(())
     }
