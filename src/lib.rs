@@ -166,7 +166,7 @@ impl Buffer {
         if self.0.capacity() > MAX_BUFFER_CAPACITY {
             self.0.shrink_to(MAX_BUFFER_CAPACITY);
         }
-        writeln!(self.0, "{}", line)?;
+        writeln!(self.0, "{line}")?;
         Ok(&self.0)
     }
 }

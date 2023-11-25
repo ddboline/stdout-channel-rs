@@ -1,6 +1,6 @@
 [package]
 name = "stdout-channel"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 description = "Write stdout to an async queue."
@@ -14,10 +14,10 @@ readme = "README.md"
 [dependencies]
 thiserror = "1.0"
 deadqueue = "0.2"
-tokio = {version="1.20", features=["io-std", "io-util", "sync", "rt-multi-thread", "time"]}
+tokio = {version="1.34", features=["io-std", "io-util", "sync", "rt-multi-thread", "time"]}
 
 [dev-dependencies]
-tokio = {version="1.20", features=["rt-multi-thread", "macros"]}
+tokio = {version="1.34", features=["rt-multi-thread", "macros"]}
 stack-string = { version="0.8", features=["postgres_types"] }
 time = "0.3"
 env_logger = "0.10"
