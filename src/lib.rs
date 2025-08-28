@@ -3,15 +3,19 @@ pub mod rate_limiter;
 pub use rate_limiter::RateLimiter;
 
 use deadqueue::unlimited::Queue;
-use std::{fmt, fmt::Display, io::Write, ops::Deref, sync::Arc};
+use std::{
+    fmt,
+    fmt::Display,
+    io::{Error as IoError, Write},
+    ops::Deref,
+    sync::Arc,
+};
+use thiserror::Error;
 use tokio::{
     io::{stderr, stdout, AsyncWriteExt},
     sync::Mutex,
-    task::{spawn, JoinHandle},
+    task::{spawn, JoinError, JoinHandle},
 };
-use thiserror::Error;
-use tokio::task::JoinError;
-use std::io::Error as IoError;
 
 #[derive(Error, Debug)]
 pub enum StdoutChannelError {

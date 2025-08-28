@@ -96,8 +96,7 @@ mod tests {
         time::{sleep, Duration},
     };
 
-    use crate::rate_limiter::RateLimiter;
-    use crate::StdoutChannelError;
+    use crate::{rate_limiter::RateLimiter, StdoutChannelError};
 
     #[tokio::test]
     async fn test_rate_limiter() -> Result<(), StdoutChannelError> {
