@@ -60,7 +60,7 @@ impl RateLimiterInner {
         }
 
         self.remaining
-            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, gtzero)
+            .try_update(Ordering::SeqCst, Ordering::SeqCst, gtzero)
             .is_ok()
     }
 
